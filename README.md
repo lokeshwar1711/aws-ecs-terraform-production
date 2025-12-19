@@ -1,38 +1,35 @@
-# 🚀 AWS ECS Production Infrastructure
+# AWS ECS Infrastructure with Terraform
 
 [![Terraform](https://img.shields.io/badge/Terraform-1.6+-623CE4?logo=terraform)](https://terraform.io)
 [![AWS](https://img.shields.io/badge/AWS-ECS-FF9900?logo=amazon-aws)](https://aws.amazon.com/ecs/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=github-actions)](https://github.com/features/actions)
-[![Security](https://img.shields.io/badge/Security-tfsec%20%7C%20checkov-success)](https://github.com/aquasecurity/tfsec)
-[![Version](https://img.shields.io/badge/Version-2.1.0-informational)](CHANGELOG.md)
 
-A production-ready, scalable AWS ECS infrastructure built with Terraform. This project demonstrates enterprise-grade DevOps practices and cloud architecture patterns.
+A scalable AWS ECS infrastructure built with Terraform. This project started as a learning exercise but evolved into production-ready infrastructure.
 
-## 🏗️ Architecture Overview
+## Architecture
 
-This infrastructure deploys a highly available, auto-scaling containerized application on AWS ECS with the following components:
+This infrastructure deploys containerized applications on AWS ECS with:
 
-- **ECS Fargate Cluster** - Serverless container orchestration
-- **Application Load Balancer** - Traffic distribution with health checks
-- **Auto Scaling** - Dynamic scaling based on CPU/memory metrics
-- **VPC & Networking** - Multi-AZ setup with public/private subnets
-- **Security Groups** - Least privilege network access
-- **CloudWatch** - Comprehensive logging and monitoring
-- **IAM Roles** - Fine-grained permissions following AWS best practices
-- **Route53** - DNS management with health checks
-- **ACM** - SSL/TLS certificate management
-- **S3 & DynamoDB** - Terraform state management with locking
+- **ECS Fargate Cluster** - Container orchestration
+- **Application Load Balancer** - Traffic distribution and health checks  
+- **Auto Scaling** - CPU and memory based scaling
+- **VPC & Networking** - Multi-AZ with public/private subnets
+- **Security Groups** - Network access control
+- **CloudWatch** - Logging and monitoring
+- **IAM Roles** - Proper permissions
+- **Route53** - DNS management (optional)
+- **ACM** - SSL/TLS certificates
+- **S3 & DynamoDB** - Terraform state management
 
-## 🚀 Quick Start
+## Getting Started
 
 ### Prerequisites
 
-- AWS CLI configured with appropriate permissions
+- AWS CLI configured
 - Terraform >= 1.5.0
-- Docker (for local testing)
+- Docker (optional, for sample app)
 
-### Deployment
+### Basic Setup
 
 1. **Clone and setup**
    ```bash

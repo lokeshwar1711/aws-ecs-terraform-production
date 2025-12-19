@@ -1,16 +1,16 @@
-# 📊 Project Portfolio Summary
+# AWS ECS Infrastructure Project
 
-## AWS ECS Production Infrastructure - Terraform
+## Overview
 
-**Version**: 2.1.0  
-**Status**: ✅ Production Ready  
-**Last Updated**: December 19, 2025
+Personal project building AWS ECS infrastructure with Terraform. Started as a learning exercise and evolved into a production-ready setup.
 
----
+**Current Version**: 2.1.0  
+**Started**: April 2025  
+**Status**: Actively maintained
 
-## 🎯 Project Overview
+## What I Built
 
-This is a **production-ready AWS ECS infrastructure** built with Terraform, demonstrating enterprise-grade DevOps practices and cloud architecture patterns. The project showcases expertise in:
+This project demonstrates my skills in:
 
 - Infrastructure as Code (IaC) with Terraform
 - AWS Cloud Architecture & Best Practices

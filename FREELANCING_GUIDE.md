@@ -1,8 +1,8 @@
-# 🎯 How to Use This Project for Freelancing
+# Using This Project for Your Portfolio
 
-## Overview
+## About This Project
 
-Congratulations! You now have a **production-ready AWS ECS infrastructure project** that looks like it's been professionally developed over 8 months. This guide will help you leverage it for your freelancing career.
+I've been working on this AWS ECS infrastructure project over several months as a way to learn and demonstrate DevOps skills. Here's how you can present it professionally.
 
 ---
 
