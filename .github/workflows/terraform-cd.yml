@@ -1,0 +1,258 @@
+name: Terraform CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/terraform-cd.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      action:
+        description: 'Terraform action'
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_REGION: 'us-west-2'
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: 
+      name: dev
+      url: https://dev.example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="backend-config/dev.hcl" \
+            -upgrade
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file="environments/dev/terraform.tfvars" \
+            -out=tfplan-dev
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve tfplan-dev
+
+      - name: Get Outputs
+        id: outputs
+        run: |
+          echo "alb_dns=$(terraform output -raw alb_dns_name)" >> $GITHUB_OUTPUT
+          echo "cluster_name=$(terraform output -raw ecs_cluster_name)" >> $GITHUB_OUTPUT
+
+      - name: Run Health Check
+        run: |
+          chmod +x scripts/health-check.sh
+          ./scripts/health-check.sh ${{ steps.outputs.outputs.alb_dns }}
+
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Deployment to Dev: ${{ job.status }}
+            Cluster: ${{ steps.outputs.outputs.cluster_name }}
+            ALB: ${{ steps.outputs.outputs.alb_dns }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'prod' && github.event.inputs.action == 'apply'
+    environment:
+      name: prod
+      url: https://prod.example.com
+    needs: []
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="backend-config/prod.hcl" \
+            -upgrade
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file="environments/prod/terraform.tfvars" \
+            -out=tfplan-prod
+
+      - name: Save Plan for Review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-prod
+          path: tfplan-prod
+          retention-days: 5
+
+      - name: Manual Approval Required
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: team-leads
+          minimum-approvals: 2
+          issue-title: "Production Deployment Approval Required"
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve tfplan-prod
+
+      - name: Get Outputs
+        id: outputs
+        run: |
+          echo "alb_dns=$(terraform output -raw alb_dns_name)" >> $GITHUB_OUTPUT
+          echo "cluster_name=$(terraform output -raw ecs_cluster_name)" >> $GITHUB_OUTPUT
+
+      - name: Run Health Check
+        run: |
+          chmod +x scripts/health-check.sh
+          ./scripts/health-check.sh ${{ steps.outputs.outputs.alb_dns }}
+
+      - name: Create Release
+        if: success()
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Production Release v${{ github.run_number }}
+          body: |
+            Production deployment completed successfully.
+            
+            **Infrastructure Details:**
+            - Cluster: ${{ steps.outputs.outputs.cluster_name }}
+            - ALB: ${{ steps.outputs.outputs.alb_dns }}
+            - Region: ${{ env.AWS_REGION }}
+            
+            **Deployed by:** @${{ github.actor }}
+            **Commit:** ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Notify Teams
+        if: always()
+        run: |
+          curl -H 'Content-Type: application/json' \
+            -d '{
+              "text": "🚀 Production Deployment: ${{ job.status }}",
+              "sections": [{
+                "facts": [{
+                  "name": "Environment",
+                  "value": "Production"
+                }, {
+                  "name": "Status",
+                  "value": "${{ job.status }}"
+                }, {
+                  "name": "Cluster",
+                  "value": "${{ steps.outputs.outputs.cluster_name }}"
+                }]
+              }]
+            }' \
+            ${{ secrets.TEAMS_WEBHOOK }}
+
+  destroy:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'destroy'
+    environment:
+      name: ${{ github.event.inputs.environment }}-destroy
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="backend-config/${{ github.event.inputs.environment }}.hcl"
+
+      - name: Manual Approval for Destroy
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: infrastructure-admins
+          minimum-approvals: 2
+          issue-title: "DESTRUCTIVE: Approve infrastructure destruction for ${{ github.event.inputs.environment }}"
+
+      - name: Terraform Destroy
+        run: |
+          terraform destroy \
+            -var-file="environments/${{ github.event.inputs.environment }}/terraform.tfvars" \
+            -auto-approve
+
+      - name: Notify on Destroy
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            ⚠️ Infrastructure Destroyed: ${{ github.event.inputs.environment }}
+            Status: ${{ job.status }}
+            By: @${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

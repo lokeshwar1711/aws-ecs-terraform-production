@@ -1,0 +1,40 @@
+version: 0.10
+currency: USD
+
+projects:
+  - path: .
+    name: aws-ecs-terraform-production
+    
+    terraform_workspace_names:
+      - dev
+      - prod
+
+breakdown:
+  resources:
+    - aws_ecs_*
+    - aws_lb
+    - aws_nat_gateway
+    - aws_vpc
+    - aws_cloudwatch_*
+
+usage:
+  aws_nat_gateway:
+    monthly_gb: 100
+
+  aws_lb:
+    monthly_gb: 1000
+
+  aws_ecs_service:
+    monthly_hours: 730
+
+output:
+  format: table
+  fields:
+    - Name
+    - MonthlyCost
+    - Unit
+    - HourlyCost
+
+thresholds:
+  percentage_threshold: 10
+  absolute_threshold: 100

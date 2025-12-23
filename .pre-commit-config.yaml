@@ -1,0 +1,115 @@
+# Pre-commit hooks for code quality and security
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  # Terraform formatting
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.83.6
+    hooks:
+      - id: terraform_fmt
+        name: Terraform Format
+        description: Rewrites all Terraform configuration files to canonical format
+      
+      - id: terraform_validate
+        name: Terraform Validate
+        description: Validates all Terraform configuration files
+      
+      - id: terraform_docs
+        name: Terraform Docs
+        description: Inserts terraform-docs output into README.md
+        args:
+          - --args=--lockfile=false
+      
+      - id: terraform_tflint
+        name: Terraform Lint
+        description: Validates all Terraform configuration files with TFLint
+      
+      - id: terraform_tfsec
+        name: Terraform Security
+        description: Static analysis of Terraform code
+        args:
+          - --args=--minimum-severity=MEDIUM
+
+  # Checkov security scanning
+  - repo: https://github.com/bridgecrewio/checkov
+    rev: 3.1.34
+    hooks:
+      - id: checkov
+        name: Checkov Security Scan
+        args: ['--quiet', '--framework', 'terraform']
+        verbose: true
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        name: YAML Lint
+        args: ['-d', '{extends: default, rules: {line-length: {max: 120}}}']
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+      
+      - id: end-of-file-fixer
+        name: Fix End of Files
+      
+      - id: check-yaml
+        name: Check YAML
+        args: ['--unsafe']
+      
+      - id: check-added-large-files
+        name: Check Large Files
+        args: ['--maxkb=1000']
+      
+      - id: check-case-conflict
+        name: Check Case Conflict
+      
+      - id: check-merge-conflict
+        name: Check Merge Conflicts
+      
+      - id: detect-private-key
+        name: Detect Private Keys
+      
+      - id: mixed-line-ending
+        name: Fix Mixed Line Endings
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        name: Markdown Lint
+        args: ['--fix']
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        name: Shell Check
+
+  # Commit message validation
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        name: Conventional Commits
+        stages: [commit-msg]
+
+  # Prevent commits to main
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: no-commit-to-branch
+        name: Prevent Direct Commits to Main
+        args: ['--branch', 'main', '--branch', 'master']
+
+# Global settings
+default_language_version:
+  python: python3.11
+
+fail_fast: false

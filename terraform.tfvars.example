@@ -1,0 +1,62 @@
+# Example Terraform Variables Configuration
+# Copy this file to terraform.tfvars and customize for your environment
+
+# General Configuration
+app_name    = "myapp"
+environment = "dev"
+aws_region  = "us-west-2"
+owner       = "DevOps Team"
+cost_center = "Engineering"
+
+# Networking Configuration
+vpc_cidr                 = "10.0.0.0/16"
+az_count                 = 2
+public_subnet_cidrs      = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs     = ["10.0.10.0/24", "10.0.20.0/24"]
+enable_nat_gateway       = true
+single_nat_gateway       = false
+
+# Security Configuration
+alb_ingress_cidrs = ["0.0.0.0/0"]  # Restrict this in production
+ecs_ingress_ports = [80, 443]
+
+# Load Balancer Configuration
+domain_name     = ""  # Set to your domain, e.g., "example.com"
+certificate_arn = ""  # Set to your ACM certificate ARN
+
+# ECS Configuration
+container_image  = "nginx:latest"  # Replace with your application image
+container_port   = 80
+container_cpu    = 256
+container_memory = 512
+desired_count    = 2
+min_capacity     = 1
+max_capacity     = 10
+
+# Auto Scaling Configuration
+cpu_target_value    = 70.0
+memory_target_value = 80.0
+
+# Monitoring Configuration
+enable_monitoring = true
+sns_topic_arn     = ""  # Leave empty to create a new SNS topic
+
+# Environment Variables for Container
+environment_variables = [
+  {
+    name  = "NODE_ENV"
+    value = "production"
+  },
+  {
+    name  = "LOG_LEVEL"
+    value = "info"
+  }
+]
+
+# Secrets (store sensitive data in AWS Secrets Manager)
+secrets = [
+  # {
+  #   name      = "DATABASE_PASSWORD"
+  #   valueFrom = "arn:aws:secretsmanager:us-west-2:123456789012:secret:prod/database-AbCdEf"
+  # }
+]
